@@ -78,6 +78,14 @@
     return ((n % length) + length) % length;
   }
 
+  // Swagger UI's toggle onClick is on the inner button (.opblock-summary-control),
+  // not on the outer div (.opblock-summary). Clicking the div does nothing because
+  // the div's React handler only fires for keyboard keyCodes, not programmatic clicks.
+  function getToggleBtn(block) {
+    return block.querySelector('.opblock-summary-control')
+      || block.querySelector('.opblock-summary');
+  }
+
   function setFocus(n) {
     const blocks = getOpblocks();
     if (blocks.length === 0) return;
@@ -191,16 +199,20 @@
         if (!focused) {
           prevTag = tags[tags.length - 1];
         } else {
-          const reversedTags = [...tags].reverse();
-          for (const tag of reversedTags) {
-            // FOLLOWING is set when `focused` follows `tag` in the document,
-            // meaning `tag` lies before the focused element — i.e. an earlier section.
-            if (tag.compareDocumentPosition(focused) & Node.DOCUMENT_POSITION_FOLLOWING) {
-              prevTag = tag;
-              break;
+          // Walk forward through all tags to find the current section (the last tag
+          // that still precedes the focused element). Then step back one index.
+          // Breaking early (as a reverse loop would) picks the current section's tag,
+          // not the one before it.
+          let currentIdx = -1;
+          for (let i = 0; i < tags.length; i++) {
+            // FOLLOWING: focused comes after tags[i] → tags[i] is before focused
+            if (tags[i].compareDocumentPosition(focused) & Node.DOCUMENT_POSITION_FOLLOWING) {
+              currentIdx = i;
             }
           }
-          if (!prevTag) prevTag = tags[tags.length - 1]; // wrap around
+          prevTag = currentIdx <= 0
+            ? tags[tags.length - 1]   // was at first section — wrap around
+            : tags[currentIdx - 1];
         }
         prevTag.scrollIntoView({ block: 'start', behavior: 'smooth' });
         const firstBlock = prevTag.closest('.opblock-tag-section')
@@ -215,26 +227,34 @@
       // ── Expand / collapse focused ─────────────────────────────────────────
       case 'Enter':
       case ' ': {
+        // If browser focus is on a natively interactive element (e.g. the Execute
+        // button reached via Tab), let Enter/Space activate it instead of
+        // triggering our expand/collapse shortcut.
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === 'BUTTON' || ae.tagName === 'A'
+            || ae.getAttribute('role') === 'button')) break;
         if (focusedIndex < 0) break;
         e.preventDefault();
-        const summary = blocks[focusedIndex].querySelector('.opblock-summary');
-        if (summary) summary.click();
+        const btn = getToggleBtn(blocks[focusedIndex]);
+        if (btn) btn.click();
         break;
       }
 
       // ── Expand / collapse all ─────────────────────────────────────────────
       case 'o': {
         e.preventDefault();
-        swaggerRoot
-          .querySelectorAll('.opblock:not(.is-open) .opblock-summary')
-          .forEach(btn => btn.click());
+        swaggerRoot.querySelectorAll('.opblock:not(.is-open)').forEach(block => {
+          const btn = getToggleBtn(block);
+          if (btn) btn.click();
+        });
         break;
       }
       case 'c': {
         e.preventDefault();
-        swaggerRoot
-          .querySelectorAll('.opblock.is-open .opblock-summary')
-          .forEach(btn => btn.click());
+        swaggerRoot.querySelectorAll('.opblock.is-open').forEach(block => {
+          const btn = getToggleBtn(block);
+          if (btn) btn.click();
+        });
         break;
       }
 
@@ -245,8 +265,8 @@
         const block = blocks[focusedIndex];
         // Expand if collapsed so React renders the Try-it-out button
         if (!block.classList.contains('is-open')) {
-          const summary = block.querySelector('.opblock-summary');
-          if (summary) summary.click();
+          const btn = getToggleBtn(block);
+          if (btn) btn.click();
         }
         // Defer click until after React's render cycle
         requestAnimationFrame(() => {
