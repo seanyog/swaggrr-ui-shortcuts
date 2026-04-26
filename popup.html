@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swaggrr shortcuts</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="header">
+    <span class="logo">Swaggrr</span>
+    <span class="tagline">keyboard shortcuts</span>
+  </header>
+
+  <main class="content">
+    <section>
+      <h3>Navigate</h3>
+      <dl>
+        <div>
+          <dt><kbd>j</kbd> / <kbd>↓</kbd></dt>
+          <dd>Next endpoint</dd>
+        </div>
+        <div>
+          <dt><kbd>k</kbd> / <kbd>↑</kbd></dt>
+          <dd>Previous endpoint</dd>
+        </div>
+        <div>
+          <dt><kbd>J</kbd></dt>
+          <dd>Next tag section</dd>
+        </div>
+        <div>
+          <dt><kbd>K</kbd></dt>
+          <dd>Previous tag section</dd>
+        </div>
+      </dl>
+    </section>
+
+    <hr>
+
+    <section>
+      <h3>Operations</h3>
+      <dl>
+        <div>
+          <dt><kbd>Enter</kbd> / <kbd>Space</kbd></dt>
+          <dd>Expand / collapse focused</dd>
+        </div>
+        <div>
+          <dt><kbd>o</kbd></dt>
+          <dd>Expand all endpoints</dd>
+        </div>
+        <div>
+          <dt><kbd>c</kbd></dt>
+          <dd>Collapse all endpoints</dd>
+        </div>
+        <div>
+          <dt><kbd>t</kbd></dt>
+          <dd>Try it out (focused)</dd>
+        </div>
+      </dl>
+    </section>
+
+    <hr>
+
+    <section>
+      <h3>Global</h3>
+      <dl>
+        <div>
+          <dt><kbd>f</kbd></dt>
+          <dd>Focus filter input</dd>
+        </div>
+        <div>
+          <dt><kbd>a</kbd></dt>
+          <dd>Open Authorize dialog</dd>
+        </div>
+        <div>
+          <dt><kbd>?</kbd></dt>
+          <dd>Toggle in-page help</dd>
+        </div>
+        <div>
+          <dt><kbd>Esc</kbd></dt>
+          <dd>Close help overlay</dd>
+        </div>
+      </dl>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span id="status-indicator" class="status status--checking">Checking&hellip;</span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
