@@ -39,7 +39,7 @@
             <div><dt><kbd>f</kbd></dt><dd>Focus filter input</dd></div>
             <div><dt><kbd>a</kbd></dt><dd>Open Authorize dialog</dd></div>
             <div><dt><kbd>?</kbd></dt><dd>Toggle this help</dd></div>
-            <div><dt><kbd>Esc</kbd></dt><dd>Close help</dd></div>
+            <div><dt><kbd>Esc</kbd></dt><dd>Close help or Authorize dialog</dd></div>
           </dl>
         </section>
       </div>
@@ -113,10 +113,17 @@
   // ── Keyboard handler ──────────────────────────────────────────────────────
 
   function onKeyDown(e) {
-    // Escape always closes help, even in inputs
+    // Escape always closes our overlays and Swagger's Authorize modal, even in inputs
     if (e.key === 'Escape') {
       if (helpVisible) {
         closeHelp();
+        e.preventDefault();
+        return;
+      }
+      // Swagger UI doesn't wire Escape to its own Authorize modal — do it for them
+      const authCloseBtn = document.querySelector('.dialog-ux .close-modal');
+      if (authCloseBtn) {
+        authCloseBtn.click();
         e.preventDefault();
       }
       return;
