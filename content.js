@@ -227,6 +227,12 @@
       // ── Expand / collapse focused ─────────────────────────────────────────
       case 'Enter':
       case ' ': {
+        // If browser focus is on a natively interactive element (e.g. the Execute
+        // button reached via Tab), let Enter/Space activate it instead of
+        // triggering our expand/collapse shortcut.
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === 'BUTTON' || ae.tagName === 'A'
+            || ae.getAttribute('role') === 'button')) break;
         if (focusedIndex < 0) break;
         e.preventDefault();
         const btn = getToggleBtn(blocks[focusedIndex]);
