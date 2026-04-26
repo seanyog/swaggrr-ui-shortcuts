@@ -227,12 +227,16 @@
       // ── Expand / collapse focused ─────────────────────────────────────────
       case 'Enter':
       case ' ': {
-        // If browser focus is on a natively interactive element (e.g. the Execute
-        // button reached via Tab), let Enter/Space activate it instead of
-        // triggering our expand/collapse shortcut.
+        // If a natively interactive element has browser focus, yield to it —
+        // but only when it lives inside the Swaggrr-focused block. Without this
+        // scope check, an Execute button in any open try-it-out panel fires when
+        // the user presses Enter to toggle a completely different endpoint.
         const ae = document.activeElement;
         if (ae && (ae.tagName === 'BUTTON' || ae.tagName === 'A'
-            || ae.getAttribute('role') === 'button')) break;
+            || ae.getAttribute('role') === 'button')) {
+          const focusedBlock = focusedIndex >= 0 ? blocks[focusedIndex] : null;
+          if (!focusedBlock || focusedBlock.contains(ae)) break;
+        }
         if (focusedIndex < 0) break;
         e.preventDefault();
         const btn = getToggleBtn(blocks[focusedIndex]);
