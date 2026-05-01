@@ -3,6 +3,7 @@
 
   // ── State ─────────────────────────────────────────────────────────────────
   let focusedIndex = -1;
+  let focusedId    = null;  // block's id attr — stable across React re-renders
   let helpVisible  = false;
   let swaggerRoot  = null;
   let helpOverlay  = null;
@@ -78,9 +79,8 @@
     return ((n % length) + length) % length;
   }
 
-  // Swagger UI's toggle onClick is on the inner button (.opblock-summary-control),
-  // not on the outer div (.opblock-summary). Clicking the div does nothing because
-  // the div's React handler only fires for keyboard keyCodes, not programmatic clicks.
+  // Swagger UI's toggle onClick is on .opblock-summary-control (the inner button),
+  // not on .opblock-summary (the outer div).
   function getToggleBtn(block) {
     return block.querySelector('.opblock-summary-control')
       || block.querySelector('.opblock-summary');
@@ -90,22 +90,75 @@
     const blocks = getOpblocks();
     if (blocks.length === 0) return;
 
-    // Remove focus from old element
+    // Remove focus marker from old element
     if (focusedIndex >= 0 && focusedIndex < blocks.length) {
       blocks[focusedIndex].classList.remove('swaggrr-focus');
     }
 
     focusedIndex = clampIndex(n, blocks.length);
     const target = blocks[focusedIndex];
+    focusedId = target.id || null;
+
     target.classList.add('swaggrr-focus');
     target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
-  // Re-sync focusedIndex after React re-renders DOM nodes
+  // Re-sync focus state after React re-renders DOM nodes.
+  // Prioritises the stable block id over the array index — React replaces the
+  // DOM node (losing the CSS class) but preserves the id attribute.
   function onDomChanged() {
+    if (focusedIndex < 0 && !focusedId) return;
+
     const blocks = getOpblocks();
-    const idx = blocks.findIndex(el => el.classList.contains('swaggrr-focus'));
-    focusedIndex = idx; // -1 if not found (focus removed by React)
+
+    if (focusedId) {
+      const idx = blocks.findIndex(b => b.id === focusedId);
+      if (idx >= 0) {
+        focusedIndex = idx;
+      } else {
+        // Block is no longer visible (section collapsed / filtered out)
+        focusedIndex = -1;
+        focusedId    = null;
+        return;
+      }
+    } else if (focusedIndex >= blocks.length) {
+      focusedIndex = -1;
+      return;
+    }
+
+    blocks.forEach((b, i) => {
+      b.classList.toggle('swaggrr-focus', i === focusedIndex);
+    });
+  }
+
+  // Jump to a tag section, expanding it first if it is currently collapsed.
+  function jumpToSection(tag) {
+    tag.scrollIntoView({ block: 'start', behavior: 'smooth' });
+
+    const section   = tag.closest('.opblock-tag-section');
+    const firstBlock = section?.querySelector('.opblock');
+
+    if (firstBlock) {
+      const idx = getOpblocks().indexOf(firstBlock);
+      if (idx >= 0) setFocus(idx);
+      return;
+    }
+
+    // Section is collapsed — no .opblock children in DOM yet.
+    // Click the expand button (prefer the <button> child, fall back to the h4).
+    const expandBtn = tag.querySelector('button') || tag;
+    expandBtn.click();
+
+    // Wait for React to render the opblock children, then focus the first one.
+    const observer = new MutationObserver(() => {
+      const b = section?.querySelector('.opblock');
+      if (!b) return;
+      observer.disconnect();
+      const idx = getOpblocks().indexOf(b);
+      if (idx >= 0) setFocus(idx);
+    });
+    observer.observe(swaggerRoot, { childList: true, subtree: true });
+    setTimeout(() => observer.disconnect(), 2000);
   }
 
   function toggleHelp() {
@@ -160,7 +213,6 @@
         break;
       }
       case 'J': {
-        // Jump to next tag section
         e.preventDefault();
         const tags = getTags();
         if (tags.length === 0) break;
@@ -170,8 +222,7 @@
           nextTag = tags[0];
         } else {
           for (const tag of tags) {
-            // PRECEDING is set when `focused` precedes `tag` in the document,
-            // meaning `tag` lies after the focused element — i.e. a later section.
+            // DOCUMENT_POSITION_PRECEDING: `focused` comes before `tag` → tag is a later section
             if (tag.compareDocumentPosition(focused) & Node.DOCUMENT_POSITION_PRECEDING) {
               nextTag = tag;
               break;
@@ -179,18 +230,10 @@
           }
           if (!nextTag) nextTag = tags[0]; // wrap around
         }
-        nextTag.scrollIntoView({ block: 'start', behavior: 'smooth' });
-        // Focus first opblock inside this tag's container
-        const firstBlock = nextTag.closest('.opblock-tag-section')
-          ?.querySelector('.opblock');
-        if (firstBlock) {
-          const idx = blocks.indexOf(firstBlock);
-          if (idx >= 0) setFocus(idx);
-        }
+        jumpToSection(nextTag);
         break;
       }
       case 'K': {
-        // Jump to previous tag section
         e.preventDefault();
         const tags = getTags();
         if (tags.length === 0) break;
@@ -199,47 +242,37 @@
         if (!focused) {
           prevTag = tags[tags.length - 1];
         } else {
-          // Walk forward through all tags to find the current section (the last tag
-          // that still precedes the focused element). Then step back one index.
-          // Breaking early (as a reverse loop would) picks the current section's tag,
-          // not the one before it.
+          // Find the last tag that precedes focused — that is the current section.
+          // Then step back one index to get the previous section.
           let currentIdx = -1;
           for (let i = 0; i < tags.length; i++) {
-            // FOLLOWING: focused comes after tags[i] → tags[i] is before focused
+            // DOCUMENT_POSITION_FOLLOWING: focused comes after tags[i] → tags[i] is before focused
             if (tags[i].compareDocumentPosition(focused) & Node.DOCUMENT_POSITION_FOLLOWING) {
               currentIdx = i;
             }
           }
           prevTag = currentIdx <= 0
-            ? tags[tags.length - 1]   // was at first section — wrap around
+            ? tags[tags.length - 1]   // at first section — wrap around
             : tags[currentIdx - 1];
         }
-        prevTag.scrollIntoView({ block: 'start', behavior: 'smooth' });
-        const firstBlock = prevTag.closest('.opblock-tag-section')
-          ?.querySelector('.opblock');
-        if (firstBlock) {
-          const idx = blocks.indexOf(firstBlock);
-          if (idx >= 0) setFocus(idx);
-        }
+        jumpToSection(prevTag);
         break;
       }
 
       // ── Expand / collapse focused ─────────────────────────────────────────
       case 'Enter':
       case ' ': {
-        // If a natively interactive element has browser focus, yield to it —
-        // but only when it lives inside the Swaggrr-focused block. Without this
-        // scope check, an Execute button in any open try-it-out panel fires when
-        // the user presses Enter to toggle a completely different endpoint.
-        const ae = document.activeElement;
-        if (ae && (ae.tagName === 'BUTTON' || ae.tagName === 'A'
-            || ae.getAttribute('role') === 'button')) {
-          const focusedBlock = focusedIndex >= 0 ? blocks[focusedIndex] : null;
-          if (!focusedBlock || focusedBlock.contains(ae)) break;
-        }
         if (focusedIndex < 0) break;
+        // If the focused block's toggle button already has real browser focus,
+        // yield — the browser will synthesise a click natively on Enter/Space.
+        const ae = document.activeElement;
+        const focusedBlock = blocks[focusedIndex];
+        if (ae && focusedBlock.contains(ae) &&
+            (ae.tagName === 'BUTTON' || ae.getAttribute('role') === 'button')) {
+          break;
+        }
         e.preventDefault();
-        const btn = getToggleBtn(blocks[focusedIndex]);
+        const btn = getToggleBtn(focusedBlock);
         if (btn) btn.click();
         break;
       }
@@ -266,17 +299,36 @@
       case 't': {
         if (focusedIndex < 0) break;
         e.preventDefault();
-        const block = blocks[focusedIndex];
-        // Expand if collapsed so React renders the Try-it-out button
-        if (!block.classList.contains('is-open')) {
-          const btn = getToggleBtn(block);
-          if (btn) btn.click();
+        // Capture the index now; after any async re-render the `blocks` array
+        // reference is stale, so re-query via getOpblocks() inside callbacks.
+        const idx = focusedIndex;
+        const block = blocks[idx];
+
+        // If the button is already rendered, click it straight away.
+        const tryBtnNow = block.querySelector('.try-out__btn');
+        if (tryBtnNow) {
+          tryBtnNow.click();
+          break;
         }
-        // Defer click until after React's render cycle
-        requestAnimationFrame(() => {
-          const tryBtn = block.querySelector('.try-out__btn');
-          if (tryBtn) tryBtn.click();
+
+        // Button not rendered yet. Two sub-cases:
+        //   1. Block is collapsed → expand it; mutations will follow.
+        //   2. Block has .is-open but body not painted yet (React does the class
+        //      change and the child render in separate commits) → mutations still coming.
+        // In both cases the MutationObserver will fire when the button appears.
+        if (!block.classList.contains('is-open')) {
+          getToggleBtn(block)?.click();
+        }
+        const observer = new MutationObserver(() => {
+          const current = getOpblocks()[idx];
+          const tryBtn = current?.querySelector('.try-out__btn');
+          if (tryBtn) {
+            observer.disconnect();
+            tryBtn.click();
+          }
         });
+        observer.observe(swaggerRoot, { childList: true, subtree: true });
+        setTimeout(() => observer.disconnect(), 2000);
         break;
       }
 
@@ -309,6 +361,7 @@
 
   function init(root) {
     if (swaggerRoot) return; // already initialised
+
     swaggerRoot = root;
 
     // Inject help overlay
@@ -325,7 +378,6 @@
       if (e.target === helpOverlay) closeHelp();
     });
 
-    // Keyboard handler
     document.addEventListener('keydown', onKeyDown);
 
     // Watch for React re-renders that replace DOM nodes
@@ -333,7 +385,7 @@
     domWatcher.observe(swaggerRoot, { childList: true, subtree: true });
   }
 
-  // ── Bootstrap: handle both static and SPA-rendered Swagger UI ────────────
+  // ── Bootstrap: handle both static and SPA-rendered Swagger UI ─────────────
 
   const existing = document.getElementById('swagger-ui');
   if (existing) {
@@ -349,9 +401,7 @@
     });
     bodyWatcher.observe(document.body, { childList: true, subtree: true });
 
-    // Stop watching once the page has fully loaded and given SPAs time to
-    // render — prevents the observer from running indefinitely on pages that
-    // never contain Swagger UI.
+    // Stop watching once the page has fully loaded and given SPAs time to render.
     window.addEventListener('load', () => {
       setTimeout(() => bodyWatcher.disconnect(), 10000);
     }, { once: true });
@@ -363,7 +413,7 @@
     if (msg.action === 'ping') {
       sendResponse({ isSwagger: !!swaggerRoot });
     }
-    return false; // synchronous response — no need to keep channel open
+    return false;
   });
 
 })();

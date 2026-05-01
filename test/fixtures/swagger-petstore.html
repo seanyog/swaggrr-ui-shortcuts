@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Swagger UI — Swaggrr test fixture</title>
+  <link rel="stylesheet" href="/node_modules/swagger-ui-dist/swagger-ui.css">
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="/node_modules/swagger-ui-dist/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      spec: {
+        openapi: '3.0.0',
+        info: { title: 'Swaggrr Test API', version: '1.0.0' },
+        components: {
+          securitySchemes: {
+            bearerAuth: { type: 'http', scheme: 'bearer' }
+          }
+        },
+        security: [{ bearerAuth: [] }],
+        paths: {
+          '/pets': {
+            get:  { operationId: 'listPets',   summary: 'List pets',   tags: ['pets'],
+                    responses: { 200: { description: 'OK' } } },
+            post: { operationId: 'createPet',  summary: 'Create pet',  tags: ['pets'],
+                    responses: { 201: { description: 'Created' } } }
+          },
+          '/pets/{petId}': {
+            get:    { operationId: 'getPet',    summary: 'Get pet',    tags: ['pets'],
+                      parameters: [{ name: 'petId', in: 'path', required: true, schema: { type: 'string' } }],
+                      responses: { 200: { description: 'OK' } } },
+            delete: { operationId: 'deletePet', summary: 'Delete pet', tags: ['pets'],
+                      parameters: [{ name: 'petId', in: 'path', required: true, schema: { type: 'string' } }],
+                      responses: { 204: { description: 'No content' } } }
+          },
+          '/users': {
+            get:  { operationId: 'listUsers',  summary: 'List users',  tags: ['users'],
+                    responses: { 200: { description: 'OK' } } },
+            post: { operationId: 'createUser', summary: 'Create user', tags: ['users'],
+                    responses: { 201: { description: 'Created' } } }
+          },
+          '/users/{userId}': {
+            get: { operationId: 'getUser',     summary: 'Get user',    tags: ['users'],
+                   parameters: [{ name: 'userId', in: 'path', required: true, schema: { type: 'string' } }],
+                   responses: { 200: { description: 'OK' } } }
+          }
+        }
+      },
+      dom_id: '#swagger-ui',
+      presets: [SwaggerUIBundle.presets.apis],
+      layout: 'BaseLayout',
+      filter: true,
+    });
+  </script>
+</body>
+</html>
