@@ -8,45 +8,80 @@
   let swaggerRoot  = null;
   let helpOverlay  = null;
 
-  // ── Static help card HTML (no user input — safe to inject via innerHTML) ──
-  const HELP_HTML = `
-    <div class="swaggrr-card" id="swaggrr-card">
-      <div class="swaggrr-header">
-        <span class="swaggrr-logo">Swaggrr</span>
-        <span class="swaggrr-subtitle">keyboard shortcuts</span>
-      </div>
-      <div class="swaggrr-sections">
-        <section>
-          <h3>Navigate</h3>
-          <dl>
-            <div><dt><kbd>j</kbd> / <kbd>↓</kbd></dt><dd>Next endpoint</dd></div>
-            <div><dt><kbd>k</kbd> / <kbd>↑</kbd></dt><dd>Previous endpoint</dd></div>
-            <div><dt><kbd>J</kbd></dt><dd>Next tag section</dd></div>
-            <div><dt><kbd>K</kbd></dt><dd>Previous tag section</dd></div>
-          </dl>
-        </section>
-        <section>
-          <h3>Operations</h3>
-          <dl>
-            <div><dt><kbd>Enter</kbd> / <kbd>Space</kbd></dt><dd>Expand / collapse focused</dd></div>
-            <div><dt><kbd>o</kbd></dt><dd>Expand all endpoints</dd></div>
-            <div><dt><kbd>c</kbd></dt><dd>Collapse all endpoints</dd></div>
-            <div><dt><kbd>t</kbd></dt><dd>Try it out (focused)</dd></div>
-          </dl>
-        </section>
-        <section>
-          <h3>Global</h3>
-          <dl>
-            <div><dt><kbd>f</kbd></dt><dd>Focus filter input</dd></div>
-            <div><dt><kbd>a</kbd></dt><dd>Open Authorize dialog</dd></div>
-            <div><dt><kbd>?</kbd></dt><dd>Toggle this help</dd></div>
-            <div><dt><kbd>Esc</kbd></dt><dd>Close help or Authorize dialog</dd></div>
-          </dl>
-        </section>
-      </div>
-      <p class="swaggrr-hint">Shortcuts are disabled while typing in any input field.</p>
-    </div>
-  `;
+  // ── Help card DOM builder ─────────────────────────────────────────────────
+
+  function el(tag, cls) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    return node;
+  }
+
+  function kbd(label) {
+    const k = document.createElement('kbd');
+    k.textContent = label;
+    return k;
+  }
+
+  function row(keys, desc) {
+    const div = el('div');
+    const dt  = el('dt');
+    const dd  = el('dd');
+    keys.forEach((part, i) => {
+      if (i > 0) dt.append(document.createTextNode(' / '));
+      dt.append(kbd(part));
+    });
+    dd.textContent = desc;
+    div.append(dt, dd);
+    return div;
+  }
+
+  function section(title, rows) {
+    const sec = document.createElement('section');
+    const h3  = document.createElement('h3');
+    const dl  = document.createElement('dl');
+    h3.textContent = title;
+    rows.forEach(([keys, desc]) => dl.append(row(keys, desc)));
+    sec.append(h3, dl);
+    return sec;
+  }
+
+  function buildHelpCard() {
+    const card     = el('div', 'swaggrr-card');
+    card.id        = 'swaggrr-card';
+    const header   = el('div', 'swaggrr-header');
+    const logo     = el('span', 'swaggrr-logo');
+    const subtitle = el('span', 'swaggrr-subtitle');
+    logo.textContent     = 'Swaggrr';
+    subtitle.textContent = 'keyboard shortcuts';
+    header.append(logo, subtitle);
+
+    const sections = el('div', 'swaggrr-sections');
+    sections.append(
+      section('Navigate', [
+        [['j', '↓'], 'Next endpoint'],
+        [['k', '↑'], 'Previous endpoint'],
+        [['J'],       'Next tag section'],
+        [['K'],       'Previous tag section'],
+      ]),
+      section('Operations', [
+        [['Enter', 'Space'], 'Expand / collapse focused'],
+        [['o'],              'Expand all endpoints'],
+        [['c'],              'Collapse all endpoints'],
+        [['t'],              'Try it out (focused)'],
+      ]),
+      section('Global', [
+        [['f'],   'Focus filter input'],
+        [['a'],   'Open Authorize dialog'],
+        [['?'],   'Toggle this help'],
+        [['Esc'], 'Close help or Authorize dialog'],
+      ]),
+    );
+
+    const hint = el('p', 'swaggrr-hint');
+    hint.textContent = 'Shortcuts are disabled while typing in any input field.';
+    card.append(header, sections, hint);
+    return card;
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -370,7 +405,7 @@
     helpOverlay.setAttribute('role', 'dialog');
     helpOverlay.setAttribute('aria-modal', 'true');
     helpOverlay.setAttribute('aria-label', 'Swaggrr keyboard shortcuts');
-    helpOverlay.innerHTML = HELP_HTML;
+    helpOverlay.appendChild(buildHelpCard());
     document.body.appendChild(helpOverlay);
 
     // Close help when clicking the backdrop (not the card itself)

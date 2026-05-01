@@ -5,7 +5,7 @@
  */
 import { createServer } from 'http';
 import { readFile, access } from 'fs/promises';
-import { join, extname } from 'path';
+import { join, extname, sep } from 'path';
 import { fileURLToPath } from 'url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -23,6 +23,13 @@ const MIME = {
 createServer(async (req, res) => {
   const urlPath = req.url.split('?')[0];
   const filePath = join(ROOT, urlPath === '/' ? '/index.html' : urlPath);
+
+  // Prevent path traversal — resolved path must stay inside ROOT
+  if (!filePath.startsWith(ROOT + sep) && filePath !== ROOT) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    res.end('Forbidden');
+    return;
+  }
 
   try {
     await access(filePath);
