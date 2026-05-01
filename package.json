@@ -1,0 +1,15 @@
+{
+  "name": "swaggrr-ui-shortcuts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0",
+    "swagger-ui-dist": "^5.17.0"
+  },
+  "scarfSettings": {
+    "enabled": false
+  }
+}
