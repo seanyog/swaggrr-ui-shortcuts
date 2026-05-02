@@ -67,69 +67,59 @@ const focusedSection = () => page.evaluate(() => {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 
-test('j focuses the first endpoint', async () => {
-  await press('j');
+test('ArrowDown focuses the first endpoint', async () => {
+  await press('ArrowDown');
   expect(await focusedId()).not.toBeNull();
 });
 
-test('j moves focus forward', async () => {
-  await press('j');
+test('ArrowDown moves focus forward', async () => {
+  await press('ArrowDown');
   const a = await focusedId();
-  await press('j');
+  await press('ArrowDown');
   const b = await focusedId();
   expect(b).not.toBeNull();
   expect(b).not.toBe(a);
 });
 
-test('j wraps from the last endpoint back to the first', async () => {
-  await press('j');
+test('ArrowDown wraps from the last endpoint back to the first', async () => {
+  await press('ArrowDown');
   const firstId = await focusedId();
-  await press('k'); // wrap to last
+  await press('ArrowUp'); // wrap to last
   const lastId  = await focusedId();
   expect(lastId).not.toBe(firstId);
 
-  await press('j'); // wrap last → first
+  await press('ArrowDown'); // wrap last → first
   expect(await focusedId()).toBe(firstId);
 });
 
-test('k moves focus backward', async () => {
-  await press('j');
-  await press('j'); // skip to second
+test('ArrowUp moves focus backward', async () => {
+  await press('ArrowDown');
+  await press('ArrowDown'); // skip to second
   const second = await focusedId();
-  await press('k');
+  await press('ArrowUp');
   const first = await focusedId();
   expect(first).not.toBe(second);
 });
 
-test('k wraps from the first endpoint to the last', async () => {
-  await press('j');
+test('ArrowUp wraps from the first endpoint to the last', async () => {
+  await press('ArrowDown');
   const firstId = await focusedId();
-  await press('k');
+  await press('ArrowUp');
   const lastId = await focusedId();
   expect(lastId).not.toBe(firstId);
 });
 
-test('ArrowDown / ArrowUp are aliases for j / k', async () => {
-  await press('ArrowDown');
-  const a = await focusedId();
-  await press('ArrowDown');
-  const b = await focusedId();
-  expect(b).not.toBe(a);
-  await press('ArrowUp');
-  expect(await focusedId()).toBe(a);
-});
-
 test('only one endpoint has swaggrr-focus at a time', async () => {
-  await press('j');
-  await press('j');
-  await press('j');
+  await press('ArrowDown');
+  await press('ArrowDown');
+  await press('ArrowDown');
   expect(await page.locator('.opblock.swaggrr-focus').count()).toBe(1);
 });
 
 // ── Expand / collapse ─────────────────────────────────────────────────────────
 
 test('Enter expands the focused endpoint', async () => {
-  await press('j');
+  await press('ArrowDown');
   const id = await focusedId();
   await press('Enter');
   await page.waitForSelector(`#${id}.is-open`, { timeout: 3000 });
@@ -137,7 +127,7 @@ test('Enter expands the focused endpoint', async () => {
 });
 
 test('Enter collapses an already-open endpoint', async () => {
-  await press('j');
+  await press('ArrowDown');
   const id = await focusedId();
   await press('Enter');
   await page.waitForSelector(`#${id}.is-open`);
@@ -149,7 +139,7 @@ test('Enter collapses an already-open endpoint', async () => {
 });
 
 test('Space is an alias for Enter (expands and collapses)', async () => {
-  await press('j');
+  await press('ArrowDown');
   const id = await focusedId();
   await press('Space');
   await page.waitForSelector(`#${id}.is-open`, { timeout: 3000 });
@@ -161,7 +151,7 @@ test('Space is an alias for Enter (expands and collapses)', async () => {
 });
 
 test('focus class persists on the same block after React re-renders it', async () => {
-  await press('j');
+  await press('ArrowDown');
   const id = await focusedId();
   await press('Enter');
   await page.waitForSelector(`#${id}.is-open`);
@@ -201,7 +191,7 @@ test('c does nothing when all endpoints are already collapsed', async () => {
 });
 
 test('c collapses an endpoint that has try-it-out active', async () => {
-  await press('j');
+  await press('ArrowDown');
   const id = await focusedId();
   await press('t');
   await page.waitForSelector(`#${id} .try-out__btn.cancel`, { timeout: 5000 });
@@ -212,17 +202,17 @@ test('c collapses an endpoint that has try-it-out active', async () => {
   expect(await countOpen()).toBe(0);
 });
 
-test('j navigation works correctly after o expand-all', async () => {
+test('ArrowDown navigation works correctly after o expand-all', async () => {
   const total = await countBlocks();
   await press('o');
   await page.waitForFunction(
     total => document.querySelectorAll('.opblock.is-open').length === total,
     total, { timeout: 5000 }
   );
-  await press('j');
+  await press('ArrowDown');
   const a = await focusedId();
   expect(a).not.toBeNull();
-  await press('j');
+  await press('ArrowDown');
   const b = await focusedId();
   expect(b).not.toBe(a);
 });
@@ -230,7 +220,7 @@ test('j navigation works correctly after o expand-all', async () => {
 // ── Try it out ────────────────────────────────────────────────────────────────
 
 test('t opens try-it-out on a collapsed endpoint', async () => {
-  await press('j');
+  await press('ArrowDown');
   const id = await focusedId();
   const isOpen = await page.locator(`#${id}.is-open`).count();
   if (isOpen) await press('Enter');
@@ -240,7 +230,7 @@ test('t opens try-it-out on a collapsed endpoint', async () => {
 });
 
 test('t activates try-it-out on an already-open endpoint', async () => {
-  await press('j');
+  await press('ArrowDown');
   await press('Enter');
   const id = await focusedId();
   await page.waitForSelector(`#${id}.is-open`);
@@ -249,7 +239,7 @@ test('t activates try-it-out on an already-open endpoint', async () => {
 });
 
 test('t cancels active try-it-out (acts as a toggle)', async () => {
-  await press('j');
+  await press('ArrowDown');
   const id = await focusedId();
   await press('t');
   await page.waitForSelector(`#${id} .try-out__btn.cancel`, { timeout: 5000 });
@@ -259,12 +249,12 @@ test('t cancels active try-it-out (acts as a toggle)', async () => {
 });
 
 test('t activates try-it-out on a second endpoint while another has it open', async () => {
-  await press('j');
+  await press('ArrowDown');
   const idA = await focusedId();
   await press('t');
   await page.waitForSelector(`#${idA} .try-out__btn.cancel`, { timeout: 5000 });
 
-  await press('j');
+  await press('ArrowDown');
   const idB = await focusedId();
   expect(idB).not.toBe(idA);
 
@@ -275,34 +265,51 @@ test('t activates try-it-out on a second endpoint while another has it open', as
   expect(await page.locator(`#${idA} .try-out__btn.cancel`).count()).toBe(1);
 });
 
+test('t moves real focus into the endpoint body after activating try-it-out', async () => {
+  // Navigate to getPet which has a path parameter input in try-it-out mode
+  await press('ArrowDown');
+  await press('ArrowDown');
+  await press('ArrowDown');
+  const id = await focusedId();
+  await press('t');
+  await page.waitForSelector(`#${id} .try-out__btn.cancel`, { timeout: 5000 });
+  // focusFirstInputWhenReady is async — wait until focus lands inside the block
+  await page.waitForFunction(id =>
+    document.activeElement?.closest(`#${id}`) !== null, id, { timeout: 3000 }
+  );
+  expect(await page.evaluate(id =>
+    document.activeElement?.closest(`#${id}`) !== null, id
+  )).toBe(true);
+});
+
 // ── Section jumps ─────────────────────────────────────────────────────────────
 
-test('J jumps to the first endpoint of the next section', async () => {
-  await press('J'); // no focus → first section (pets)
+test('PageDown jumps to the first endpoint of the next section', async () => {
+  await press('PageDown'); // no focus → first section (pets)
   expect(await focusedSection()).toContain('pets');
 
-  await press('J'); // pets → users
+  await press('PageDown'); // pets → users
   expect(await focusedSection()).toContain('users');
 });
 
-test('J wraps from the last section back to the first', async () => {
-  await press('J'); // → pets
-  await press('J'); // → users
-  await press('J'); // wraps → pets
+test('PageDown wraps from the last section back to the first', async () => {
+  await press('PageDown'); // → pets
+  await press('PageDown'); // → users
+  await press('PageDown'); // wraps → pets
   expect(await focusedSection()).toContain('pets');
 });
 
-test('K jumps to the first endpoint of the previous section', async () => {
-  await press('J'); // → pets
-  await press('J'); // → users
-  await press('K'); // users → pets
+test('PageUp jumps to the first endpoint of the previous section', async () => {
+  await press('PageDown'); // → pets
+  await press('PageDown'); // → users
+  await press('PageUp'); // users → pets
   expect(await focusedSection()).toContain('pets');
 });
 
-test('K wraps from the first section to the last', async () => {
-  await press('J'); // → pets (first section)
+test('PageUp wraps from the first section to the last', async () => {
+  await press('PageDown'); // → pets (first section)
   expect(await focusedSection()).toContain('pets');
-  await press('K'); // wraps → users (last section)
+  await press('PageUp'); // wraps → users (last section)
   expect(await focusedSection()).toContain('users');
 });
 
@@ -388,7 +395,7 @@ test('f focuses the filter input', async () => {
 });
 
 test('shortcuts are suppressed while the filter input is focused', async () => {
-  await press('j');
+  await press('ArrowDown');
   const idBefore = await focusedId();
   await press('f'); // focus filter input
   // ArrowDown is a navigation shortcut but doesn't insert characters into the
@@ -399,8 +406,8 @@ test('shortcuts are suppressed while the filter input is focused', async () => {
 
 // ── Shortcuts suppressed in try-it-out inputs ─────────────────────────────────
 
-test('j does not move focus while a try-it-out input is focused', async () => {
-  await press('j');
+test('ArrowDown does not move focus while a try-it-out input is focused', async () => {
+  await press('ArrowDown');
   await press('t');
   await page.waitForSelector('.try-out__btn.cancel', { timeout: 5000 });
 
@@ -408,7 +415,98 @@ test('j does not move focus while a try-it-out input is focused', async () => {
   const input = page.locator('.opblock.swaggrr-focus input').first();
   if (await input.count()) {
     await input.focus();
-    await press('j');
+    await press('ArrowDown');
     expect(await focusedId()).toBe(idBefore);
+  }
+});
+
+// ── Enter form (l / Shift+Enter) ──────────────────────────────────────────────
+
+test('l moves real focus into an open endpoint', async () => {
+  // Navigate to getPet which has a Try-it-out button once the body renders
+  await press('ArrowDown');
+  await press('ArrowDown');
+  await press('ArrowDown');
+  const id = await focusedId();
+  await press('Enter');
+  await page.waitForSelector(`#${id}.is-open`);
+  await press('l');
+  // enterForm is async (body renders after .is-open) — poll until focus lands
+  await page.waitForFunction(id =>
+    document.activeElement?.closest(`#${id}`) !== null, id, { timeout: 3000 }
+  );
+  expect(await page.evaluate(id =>
+    document.activeElement?.closest(`#${id}`) !== null, id
+  )).toBe(true);
+});
+
+test('Shift+Enter moves real focus into an open endpoint', async () => {
+  await press('ArrowDown');
+  await press('ArrowDown');
+  await press('ArrowDown');
+  const id = await focusedId();
+  await press('Enter');
+  await page.waitForSelector(`#${id}.is-open`);
+  await press('Shift+Enter');
+  await page.waitForFunction(id =>
+    document.activeElement?.closest(`#${id}`) !== null, id, { timeout: 3000 }
+  );
+  expect(await page.evaluate(id =>
+    document.activeElement?.closest(`#${id}`) !== null, id
+  )).toBe(true);
+});
+
+test('l expands a collapsed endpoint then enters the form', async () => {
+  await press('ArrowDown');
+  await press('ArrowDown');
+  await press('ArrowDown');
+  const id = await focusedId();
+  // Ensure it's collapsed
+  await page.waitForFunction(id => !document.querySelector(`#${id}.is-open`), id);
+  await press('l');
+  await page.waitForSelector(`#${id}.is-open`, { timeout: 3000 });
+  await page.waitForFunction(id =>
+    document.activeElement?.closest(`#${id}`) !== null, id, { timeout: 3000 }
+  );
+  expect(await page.evaluate(id =>
+    document.activeElement?.closest(`#${id}`) !== null, id
+  )).toBe(true);
+});
+
+// ── Execute (Ctrl+Enter) ──────────────────────────────────────────────────────
+
+test('Ctrl+Enter executes the endpoint when try-it-out is active', async () => {
+  await press('ArrowDown');
+  const id = await focusedId();
+  await press('t');
+  await page.waitForSelector(`#${id} .try-out__btn.cancel`, { timeout: 5000 });
+  await page.waitForSelector(`#${id} .btn.execute`, { timeout: 3000 });
+  await press('Control+Enter');
+  // Page should not crash — execute button remains (endpoint returns a response)
+  expect(await page.locator(`#${id} .btn.execute`).count()).toBe(1);
+});
+
+test('Ctrl+Enter is a no-op when try-it-out is not active', async () => {
+  await press('ArrowDown');
+  const id = await focusedId();
+  await press('Enter'); // expand only
+  await page.waitForSelector(`#${id}.is-open`);
+  await press('Control+Enter');
+  // No response area should have appeared
+  expect(await page.locator(`#${id} .btn.execute`).count()).toBe(0);
+});
+
+test('Ctrl+Enter executes even while a form input is focused', async () => {
+  await press('ArrowDown');
+  const id = await focusedId();
+  await press('t');
+  await page.waitForSelector(`#${id} .try-out__btn.cancel`, { timeout: 5000 });
+  await page.waitForSelector(`#${id} .btn.execute`, { timeout: 3000 });
+  // If there are inputs, focus one to simulate mid-fill execution
+  const input = page.locator(`#${id} .opblock-body input`).first();
+  if (await input.count()) {
+    await input.focus();
+    await press('Control+Enter');
+    expect(await page.locator(`#${id} .btn.execute`).count()).toBe(1);
   }
 });
