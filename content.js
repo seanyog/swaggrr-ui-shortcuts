@@ -58,16 +58,18 @@
     const sections = el('div', 'swaggrr-sections');
     sections.append(
       section('Navigate', [
-        [['j', '↓'], 'Next endpoint'],
-        [['k', '↑'], 'Previous endpoint'],
-        [['J'],       'Next tag section'],
-        [['K'],       'Previous tag section'],
+        [['↓'],        'Next endpoint'],
+        [['↑'],        'Previous endpoint'],
+        [['PageDown'], 'Next tag section'],
+        [['PageUp'],   'Previous tag section'],
       ]),
       section('Operations', [
-        [['Enter', 'Space'], 'Expand / collapse focused'],
-        [['o'],              'Expand all endpoints'],
-        [['c'],              'Collapse all endpoints'],
-        [['t'],              'Try it out (focused)'],
+        [['Enter', 'Space'],   'Expand / collapse focused'],
+        [['Shift+Enter', 'l'], 'Enter form (focus first field)'],
+        [['o'],                'Expand all endpoints'],
+        [['c'],                'Collapse all endpoints'],
+        [['t'],                'Try it out + focus first field'],
+        [['Ctrl+Enter'],       'Execute (when try-it-out active)'],
       ]),
       section('Global', [
         [['f'],   'Focus filter input'],
@@ -206,6 +208,62 @@
     helpOverlay.style.display = 'none';
   }
 
+  // Focus the first param input in a block after try-it-out renders.
+  // Takes a block index (not a reference) so re-renders don't stale it out.
+  function focusFirstInputWhenReady(blockIdx) {
+    const sel = '.opblock-body input:not([disabled]), .opblock-body select:not([disabled]), .opblock-body textarea:not([disabled])';
+    const current = () => getOpblocks()[blockIdx];
+    const now = current()?.querySelector(sel);
+    if (now) { now.focus(); return; }
+    const obs = new MutationObserver(() => {
+      const el = current()?.querySelector(sel);
+      if (el) { obs.disconnect(); el.focus(); }
+    });
+    obs.observe(swaggerRoot, { childList: true, subtree: true });
+    setTimeout(() => obs.disconnect(), 2000);
+  }
+
+  // Shift focus into the body of the currently focused opblock.
+  // If the block is collapsed, expand it first. Either way, wait for the body
+  // to render (React renders it async after .is-open is set) before focusing.
+  function enterForm() {
+    if (focusedIndex < 0) return;
+    const idx = focusedIndex;
+
+    const tryFocus = () => {
+      const current = getOpblocks()[idx];
+      if (!current) return false;
+      // Prefer param inputs (when try-it-out is active), then the Try-it-out button.
+      const target =
+        current.querySelector('.opblock-body input:not([disabled]), .opblock-body select:not([disabled]), .opblock-body textarea:not([disabled])') ||
+        current.querySelector('.try-out__btn:not([disabled])');
+      if (!target) return false;
+      target.focus();
+      return true;
+    };
+
+    if (tryFocus()) return;
+
+    const block = getOpblocks()[idx];
+    if (!block.classList.contains('is-open')) {
+      getToggleBtn(block)?.click();
+    }
+    const obs = new MutationObserver(() => {
+      if (tryFocus()) obs.disconnect();
+    });
+    obs.observe(swaggerRoot, { childList: true, subtree: true });
+    setTimeout(() => obs.disconnect(), 2000);
+  }
+
+  // Click the Execute button on the focused block — only when try-it-out is active.
+  function executeEndpoint() {
+    if (focusedIndex < 0) return;
+    const block = getOpblocks()[focusedIndex];
+    if (!block?.classList.contains('is-open')) return;
+    if (!block.querySelector('.try-out__btn.cancel')) return;
+    block.querySelector('.btn.execute')?.click();
+  }
+
   // ── Keyboard handler ──────────────────────────────────────────────────────
 
   function onKeyDown(e) {
@@ -225,6 +283,14 @@
       return;
     }
 
+    // Ctrl+Enter executes even while a form input has focus — checked before
+    // isInputFocused() so the user can submit by pressing Ctrl+Enter mid-fill.
+    if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Enter') {
+      e.preventDefault();
+      executeEndpoint();
+      return;
+    }
+
     // All other shortcuts suppressed while typing
     if (isInputFocused()) return;
 
@@ -235,19 +301,17 @@
 
     switch (e.key) {
       // ── Navigation ────────────────────────────────────────────────────────
-      case 'j':
       case 'ArrowDown': {
         e.preventDefault();
         setFocus(focusedIndex < 0 ? 0 : focusedIndex + 1);
         break;
       }
-      case 'k':
       case 'ArrowUp': {
         e.preventDefault();
         setFocus(focusedIndex <= 0 ? blocks.length - 1 : focusedIndex - 1);
         break;
       }
-      case 'J': {
+      case 'PageDown': {
         e.preventDefault();
         const tags = getTags();
         if (tags.length === 0) break;
@@ -268,7 +332,7 @@
         jumpToSection(nextTag);
         break;
       }
-      case 'K': {
+      case 'PageUp': {
         e.preventDefault();
         const tags = getTags();
         if (tags.length === 0) break;
@@ -294,9 +358,20 @@
         break;
       }
 
+      // ── Enter form ────────────────────────────────────────────────────────
+      case 'l': {
+        e.preventDefault();
+        enterForm();
+        break;
+      }
+
       // ── Expand / collapse focused ─────────────────────────────────────────
-      case 'Enter':
-      case ' ': {
+      case 'Enter': {
+        if (e.shiftKey) {
+          e.preventDefault();
+          enterForm();
+          break;
+        }
         if (focusedIndex < 0) break;
         // If the focused block's toggle button already has real browser focus,
         // yield — the browser will synthesise a click natively on Enter/Space.
@@ -309,6 +384,19 @@
         e.preventDefault();
         const btn = getToggleBtn(focusedBlock);
         if (btn) btn.click();
+        break;
+      }
+      case ' ': {
+        if (focusedIndex < 0) break;
+        const ae2 = document.activeElement;
+        const focusedBlock2 = blocks[focusedIndex];
+        if (ae2 && focusedBlock2.contains(ae2) &&
+            (ae2.tagName === 'BUTTON' || ae2.getAttribute('role') === 'button')) {
+          break;
+        }
+        e.preventDefault();
+        const btn2 = getToggleBtn(focusedBlock2);
+        if (btn2) btn2.click();
         break;
       }
 
@@ -342,7 +430,9 @@
         // If the button is already rendered, click it straight away.
         const tryBtnNow = block.querySelector('.try-out__btn');
         if (tryBtnNow) {
+          const activating = !tryBtnNow.classList.contains('cancel');
           tryBtnNow.click();
+          if (activating) focusFirstInputWhenReady(idx);
           break;
         }
 
@@ -360,6 +450,7 @@
           if (tryBtn) {
             observer.disconnect();
             tryBtn.click();
+            focusFirstInputWhenReady(idx);
           }
         });
         observer.observe(swaggerRoot, { childList: true, subtree: true });

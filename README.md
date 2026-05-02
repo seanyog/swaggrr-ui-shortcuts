@@ -14,19 +14,21 @@ Press `?` on any Swagger page to see this reference card inside the browser.
 
 | Key | Action |
 |-----|--------|
-| `j` / `↓` | Move to next endpoint |
-| `k` / `↑` | Move to previous endpoint |
-| `J` | Jump to next tag section |
-| `K` | Jump to previous tag section |
+| `↓` | Move to next endpoint |
+| `↑` | Move to previous endpoint |
+| `PageDown` (or `fn+↓` on Mac) | Jump to next tag section |
+| `PageUp` (or `fn+↑` on Mac) | Jump to previous tag section |
 
 ### Operations
 
 | Key | Action |
 |-----|--------|
 | `Enter` / `Space` | Expand or collapse the focused endpoint |
+| `Shift+Enter` / `l` | Enter form — focus first field in the endpoint body |
 | `o` | Expand **all** endpoints |
 | `c` | Collapse **all** endpoints |
-| `t` | Activate "Try it out" on the focused endpoint |
+| `t` | Activate "Try it out" and focus the first parameter field |
+| `Ctrl+Enter` | Execute the endpoint (only when "Try it out" is active) |
 
 ### Global
 
@@ -37,7 +39,7 @@ Press `?` on any Swagger page to see this reference card inside the browser.
 | `?` | Toggle the in-page shortcut reference |
 | `Esc` | Close the shortcut reference |
 
-> Shortcuts are automatically disabled while your cursor is in any text input, so you can type normally in filter boxes, parameter fields, and request bodies.
+> Shortcuts are automatically disabled while your cursor is in any text input — except `Ctrl+Enter`, which executes the focused endpoint even while you're filling in a parameter field.
 
 ---
 
