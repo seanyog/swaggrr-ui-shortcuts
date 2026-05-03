@@ -24,8 +24,9 @@ createServer(async (req, res) => {
   const urlPath = req.url.split('?')[0];
   const filePath = join(ROOT, urlPath === '/' ? '/index.html' : urlPath);
 
-  // Prevent path traversal — resolved path must stay inside ROOT
-  if (!filePath.startsWith(ROOT + sep) && filePath !== ROOT) {
+  // Prevent path traversal — resolved path must stay inside ROOT.
+  // ROOT ends with sep already (from URL resolution), so no need to append sep.
+  if (!filePath.startsWith(ROOT) && filePath !== ROOT) {
     res.writeHead(403, { 'Content-Type': 'text/plain' });
     res.end('Forbidden');
     return;
