@@ -211,7 +211,7 @@
   // Focus the first param input in a block after try-it-out renders.
   // Takes a block index (not a reference) so re-renders don't stale it out.
   function focusFirstInputWhenReady(blockIdx) {
-    const sel = '.opblock-body input:not([disabled]), .opblock-body select:not([disabled]), .opblock-body textarea:not([disabled])';
+    const sel = '.opblock-body input:not([disabled]), .opblock-body select:not([disabled]):not(.content-type), .opblock-body textarea:not([disabled])';
     const current = () => getOpblocks()[blockIdx];
     const now = current()?.querySelector(sel);
     if (now) { now.focus(); return; }
@@ -235,7 +235,7 @@
       if (!current) return false;
       // Prefer param inputs (when try-it-out is active), then the Try-it-out button.
       const target =
-        current.querySelector('.opblock-body input:not([disabled]), .opblock-body select:not([disabled]), .opblock-body textarea:not([disabled])') ||
+        current.querySelector('.opblock-body input:not([disabled]), .opblock-body select:not([disabled]):not(.content-type), .opblock-body textarea:not([disabled])') ||
         current.querySelector('.try-out__btn:not([disabled])');
       if (!target) return false;
       target.focus();

@@ -282,6 +282,22 @@ test('t moves real focus into the endpoint body after activating try-it-out', as
   )).toBe(true);
 });
 
+test('t does not focus the content-type select on an endpoint with a request body', async () => {
+  // createPet (second endpoint) has a multi-media-type request body, which
+  // causes Swagger UI to render a select.content-type dropdown.  Focus should
+  // land on the body textarea, not on that dropdown.
+  await press('ArrowDown');
+  await press('ArrowDown'); // createPet
+  const id = await focusedId();
+  await press('t');
+  await page.waitForSelector(`#${id} .try-out__btn.cancel`, { timeout: 5000 });
+  await page.waitForFunction(id =>
+    document.activeElement?.closest(`#${id}`) !== null, id, { timeout: 3000 }
+  );
+  const focusedClass = await page.evaluate(() => document.activeElement?.className ?? '');
+  expect(focusedClass).not.toContain('content-type');
+});
+
 // ── Section jumps ─────────────────────────────────────────────────────────────
 
 test('PageDown jumps to the first endpoint of the next section', async () => {
