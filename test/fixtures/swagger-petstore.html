@@ -25,6 +25,13 @@
             get:  { operationId: 'listPets',   summary: 'List pets',   tags: ['pets'],
                     responses: { 200: { description: 'OK' } } },
             post: { operationId: 'createPet',  summary: 'Create pet',  tags: ['pets'],
+                    requestBody: {
+                      required: true,
+                      content: {
+                        'application/json': { schema: { type: 'object', properties: { name: { type: 'string' } } } },
+                        'application/xml':  { schema: { type: 'object', properties: { name: { type: 'string' } } } }
+                      }
+                    },
                     responses: { 201: { description: 'Created' } } }
           },
           '/pets/{petId}': {
