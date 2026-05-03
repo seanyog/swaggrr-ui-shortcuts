@@ -118,6 +118,46 @@ test('only one endpoint has swaggrr-focus at a time', async () => {
 
 // ── Expand / collapse ─────────────────────────────────────────────────────────
 
+test('ArrowRight expands a collapsed endpoint', async () => {
+  await press('ArrowDown');
+  const id = await focusedId();
+  await page.waitForFunction(id => !document.querySelector(`#${id}.is-open`), id);
+  await press('ArrowRight');
+  await page.waitForSelector(`#${id}.is-open`, { timeout: 3000 });
+  expect(await page.locator(`#${id}.is-open`).count()).toBe(1);
+});
+
+test('ArrowRight is a no-op when the endpoint is already open', async () => {
+  await press('ArrowDown');
+  const id = await focusedId();
+  await press('Enter');
+  await page.waitForSelector(`#${id}.is-open`);
+  await press('ArrowRight');
+  await page.waitForTimeout(300);
+  expect(await page.locator(`#${id}.is-open`).count()).toBe(1);
+});
+
+test('ArrowLeft collapses an open endpoint', async () => {
+  await press('ArrowDown');
+  const id = await focusedId();
+  await press('Enter');
+  await page.waitForSelector(`#${id}.is-open`);
+  await press('ArrowLeft');
+  await page.waitForFunction(
+    id => !document.querySelector(`#${id}.is-open`), id, { timeout: 3000 }
+  );
+  expect(await page.locator(`#${id}.is-open`).count()).toBe(0);
+});
+
+test('ArrowLeft is a no-op when the endpoint is already collapsed', async () => {
+  await press('ArrowDown');
+  const id = await focusedId();
+  await page.waitForFunction(id => !document.querySelector(`#${id}.is-open`), id);
+  await press('ArrowLeft');
+  await page.waitForTimeout(300);
+  expect(await page.locator(`#${id}.is-open`).count()).toBe(0);
+});
+
 test('Enter expands the focused endpoint', async () => {
   await press('ArrowDown');
   const id = await focusedId();
@@ -489,7 +529,7 @@ test('l expands a collapsed endpoint then enters the form', async () => {
   )).toBe(true);
 });
 
-// ── Execute (Ctrl+Enter) ──────────────────────────────────────────────────────
+// ── Execute (Ctrl+Enter / Cmd+Enter) ─────────────────────────────────────────
 
 test('Ctrl+Enter executes the endpoint when try-it-out is active', async () => {
   await press('ArrowDown');
@@ -499,6 +539,16 @@ test('Ctrl+Enter executes the endpoint when try-it-out is active', async () => {
   await page.waitForSelector(`#${id} .btn.execute`, { timeout: 3000 });
   await press('Control+Enter');
   // Page should not crash — execute button remains (endpoint returns a response)
+  expect(await page.locator(`#${id} .btn.execute`).count()).toBe(1);
+});
+
+test('Meta+Enter executes the endpoint when try-it-out is active', async () => {
+  await press('ArrowDown');
+  const id = await focusedId();
+  await press('t');
+  await page.waitForSelector(`#${id} .try-out__btn.cancel`, { timeout: 5000 });
+  await page.waitForSelector(`#${id} .btn.execute`, { timeout: 3000 });
+  await press('Meta+Enter');
   expect(await page.locator(`#${id} .btn.execute`).count()).toBe(1);
 });
 
