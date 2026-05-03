@@ -64,12 +64,14 @@
         [['PageUp'],   'Previous tag section'],
       ]),
       section('Operations', [
-        [['Enter', 'Space'],   'Expand / collapse focused'],
-        [['Shift+Enter', 'l'], 'Enter form (focus first field)'],
-        [['o'],                'Expand all endpoints'],
-        [['c'],                'Collapse all endpoints'],
-        [['t'],                'Try it out + focus first field'],
-        [['Ctrl+Enter'],       'Execute (when try-it-out active)'],
+        [['→'],                    'Expand focused endpoint'],
+        [['←'],                    'Collapse focused endpoint'],
+        [['Enter', 'Space'],       'Expand / collapse focused'],
+        [['Shift+Enter', 'l'],     'Enter form (focus first field)'],
+        [['o'],                    'Expand all endpoints'],
+        [['c'],                    'Collapse all endpoints'],
+        [['t'],                    'Try it out + focus first field'],
+        [['Ctrl+Enter', '⌘+Enter'], 'Execute (when try-it-out active)'],
       ]),
       section('Global', [
         [['f'],   'Focus filter input'],
@@ -283,9 +285,9 @@
       return;
     }
 
-    // Ctrl+Enter executes even while a form input has focus — checked before
-    // isInputFocused() so the user can submit by pressing Ctrl+Enter mid-fill.
-    if (e.ctrlKey && !e.metaKey && !e.altKey && e.key === 'Enter') {
+    // Ctrl+Enter / Cmd+Enter executes even while a form input has focus — checked
+    // before isInputFocused() so the user can submit by pressing it mid-fill.
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key === 'Enter') {
       e.preventDefault();
       executeEndpoint();
       return;
@@ -309,6 +311,20 @@
       case 'ArrowUp': {
         e.preventDefault();
         setFocus(focusedIndex <= 0 ? blocks.length - 1 : focusedIndex - 1);
+        break;
+      }
+      case 'ArrowRight': {
+        if (focusedIndex < 0) break;
+        e.preventDefault();
+        const blockR = blocks[focusedIndex];
+        if (!blockR.classList.contains('is-open')) getToggleBtn(blockR)?.click();
+        break;
+      }
+      case 'ArrowLeft': {
+        if (focusedIndex < 0) break;
+        e.preventDefault();
+        const blockL = blocks[focusedIndex];
+        if (blockL.classList.contains('is-open')) getToggleBtn(blockL)?.click();
         break;
       }
       case 'PageDown': {
